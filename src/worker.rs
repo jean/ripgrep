@@ -44,7 +44,6 @@ struct Options {
     invert_match: bool,
     line_number: bool,
     max_count: Option<u64>,
-    no_messages: bool,
     quiet: bool,
     text: bool,
     preprocessor: Option<PathBuf>,
@@ -67,7 +66,6 @@ impl Default for Options {
             invert_match: false,
             line_number: false,
             max_count: None,
-            no_messages: false,
             quiet: false,
             text: false,
             search_zip_files: false,
@@ -200,14 +198,6 @@ impl WorkerBuilder {
         self
     }
 
-    /// If enabled, error messages are suppressed.
-    ///
-    /// This is disabled by default.
-    pub fn no_messages(mut self, yes: bool) -> Self {
-        self.opts.no_messages = yes;
-        self
-    }
-
     /// If enabled, don't show any output and quit searching after the first
     /// match is found.
     pub fn quiet(mut self, yes: bool) -> Self {
@@ -265,9 +255,7 @@ impl Worker {
                     match PreprocessorReader::from_cmd_path(cmd, path) {
                         Ok(reader) => self.search(printer, path, reader),
                         Err(err) => {
-                            if !self.opts.no_messages {
-                                eprintln!("{}", err);
-                            }
+                            message!("{}", err);
                             return 0;
                         }
                     }
@@ -284,9 +272,7 @@ impl Worker {
                     let file = match File::open(path) {
                         Ok(file) => file,
                         Err(err) => {
-                            if !self.opts.no_messages {
-                                eprintln!("{}: {}", path.display(), err);
-                            }
+                            message!("{}: {}", path.display(), err);
                             return 0;
                         }
                     };
@@ -306,9 +292,7 @@ impl Worker {
                 count
             }
             Err(err) => {
-                if !self.opts.no_messages {
-                    eprintln!("{}", err);
-                }
+                message!("{}", err);
                 0
             }
         }

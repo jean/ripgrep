@@ -2,8 +2,8 @@
 // including some light validation.
 //
 // This module is purposely written in a bare-bones way, since it is included
-// in ripgrep's build.rs file as a way to generate completion files for common
-// shells.
+// in ripgrep's build.rs file as a way to generate a man page and completion
+// files for common shells.
 //
 // The only other place that ripgrep deals with clap is in src/args.rs, which
 // is where we read clap's configuration from the end user's arguments and turn
@@ -478,7 +478,7 @@ impl RGArg {
     }
 }
 
-// We add an extra space to long descriptions so that a black line is inserted
+// We add an extra space to long descriptions so that a blank line is inserted
 // between flag descriptions in --help output.
 macro_rules! long {
     ($lit:expr) => { concat!($lit, " ") }
@@ -525,6 +525,7 @@ pub fn all_args_and_flags() -> Vec<RGArg> {
     flag_max_depth(&mut args);
     flag_max_filesize(&mut args);
     flag_mmap(&mut args);
+    flag_multiline(&mut args);
     flag_no_config(&mut args);
     flag_no_ignore(&mut args);
     flag_no_ignore_global(&mut args);
@@ -1195,6 +1196,24 @@ This flag overrides --mmap.
     let arg = RGArg::switch("no-mmap")
         .help(NO_SHORT).long_help(NO_LONG)
         .overrides("mmap");
+    args.push(arg);
+}
+
+fn flag_multiline(args: &mut Vec<RGArg>) {
+    const SHORT: &str = "Enable matching across multiple lines.";
+    const LONG: &str = long!("\
+Enable matching across multiple lines.
+
+This flag can be disabled with --no-multiline.
+");
+    let arg = RGArg::switch("multiline")
+        .help(SHORT).long_help(LONG)
+        .overrides("no-multiline");
+    args.push(arg);
+
+    let arg = RGArg::switch("no-multiline")
+        .hidden()
+        .overrides("multiline");
     args.push(arg);
 }
 

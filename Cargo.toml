@@ -45,6 +45,7 @@ encoding_rs = "0.8"
 encoding_rs_io = "0.1"
 globset = { version = "0.4.0", path = "globset" }
 grep = { version = "0.1.8", path = "grep" }
+grep2 = { version = "0.2.0", path = "grep2" }
 ignore = { version = "0.4.0", path = "ignore" }
 lazy_static = "1"
 libc = "0.2"

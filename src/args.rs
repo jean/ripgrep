@@ -21,6 +21,7 @@ use atty;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::types::{FileTypeDef, Types, TypesBuilder};
 use ignore;
+use messages::{set_messages, set_ignore_messages};
 use printer::{ColorSpecs, Printer};
 use unescape::{escape, unescape};
 use worker::{Worker, WorkerBuilder};
@@ -64,10 +65,8 @@ pub struct Args {
     mmap: bool,
     no_ignore: bool,
     no_ignore_global: bool,
-    no_ignore_messages: bool,
     no_ignore_parent: bool,
     no_ignore_vcs: bool,
-    no_messages: bool,
     null: bool,
     only_matching: bool,
     path_separator: Option<u8>,
@@ -101,6 +100,8 @@ impl Args {
         // arguments, then we re-parse argv, otherwise we just use the matches
         // we have here.
         let early_matches = ArgMatches(app::app().get_matches());
+        set_messages(!early_matches.is_present("no-messages"));
+        set_ignore_messages(!early_matches.is_present("no-ignore-messages"));
 
         if let Err(err) = Logger::init() {
             errored!("failed to initialize logger: {}", err);
@@ -120,6 +121,8 @@ impl Args {
         } else {
             log::set_max_level(log::LevelFilter::Warn);
         }
+        set_messages(!matches.is_present("no-messages"));
+        set_ignore_messages(!matches.is_present("no-ignore-messages"));
         matches.to_args()
     }
 
@@ -137,7 +140,7 @@ impl Args {
         }
         // If the user wants ripgrep to use a config file, then parse args
         // from that first.
-        let mut args = config::args(early_matches.is_present("no-messages"));
+        let mut args = config::args();
         if args.is_empty() {
             return early_matches;
         }
@@ -286,7 +289,6 @@ impl Args {
             .invert_match(self.invert_match)
             .max_count(self.max_count)
             .mmap(self.mmap)
-            .no_messages(self.no_messages)
             .quiet(self.quiet)
             .text(self.text)
             .search_zip_files(self.search_zip_files)
@@ -310,17 +312,6 @@ impl Args {
         self.type_list
     }
 
-    /// Returns true if error messages should be suppressed.
-    pub fn no_messages(&self) -> bool {
-        self.no_messages
-    }
-
-    /// Returns true if error messages associated with parsing .ignore or
-    /// .gitignore files should be suppressed.
-    pub fn no_ignore_messages(&self) -> bool {
-        self.no_ignore_messages
-    }
-
     /// Create a new recursive directory iterator over the paths in argv.
     pub fn walker(&self) -> ignore::Walk {
         self.walker_builder().build()
@@ -340,9 +331,7 @@ impl Args {
         }
         for path in &self.ignore_files {
             if let Some(err) = wd.add_ignore(path) {
-                if !self.no_messages && !self.no_ignore_messages {
-                    eprintln!("{}", err);
-                }
+                ignore_message!("{}", err);
             }
         }
 
@@ -419,10 +408,8 @@ impl<'a> ArgMatches<'a> {
             mmap: mmap,
             no_ignore: self.no_ignore(),
             no_ignore_global: self.no_ignore_global(),
-            no_ignore_messages: self.is_present("no-ignore-messages"),
             no_ignore_parent: self.no_ignore_parent(),
             no_ignore_vcs: self.no_ignore_vcs(),
-            no_messages: self.is_present("no-messages"),
             null: self.is_present("null"),
             only_matching: self.is_present("only-matching"),
             path_separator: self.path_separator()?,
